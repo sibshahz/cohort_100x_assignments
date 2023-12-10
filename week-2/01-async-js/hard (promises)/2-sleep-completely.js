@@ -4,5 +4,13 @@
  */
 
 function sleep (seconds) {
+  const startTime = Date.now();
 
+  while (Date.now() - startTime < seconds) {
+    
+  }
 }
+
+let timeCount=3000;
+sleep(timeCount);
+console.log(`Was sleeping for ${timeCount} milliseconds`)
