@@ -40,10 +40,165 @@
   Testing the server - run `npm run test-todoServer` command in terminal
  */
   const express = require('express');
+  const { v4: uuidv4 } = require('uuid');
+  const path=require('path');
+  const fs=require('fs');
   const bodyParser = require('body-parser');
   
   const app = express();
   
   app.use(bodyParser.json());
+  let todos=undefined;
+
+  const readAndStoreFile=()=>{
+    return new Promise((resolve,reject)=>{
+      fs.readFile(path.join(__dirname,'todos.json'),'utf-8', (err, data) => {
+        if (err) {
+          return 'Error reading file: '+err;
+        }
+        todos=JSON.parse(data);
+        resolve();
+      });
+    })
+  }
+  readAndStoreFile().then(()=>{
+    console.log("Data loaded from file");
+  })
+  const writeAndStoreFile=()=>{
+    return new Promise((resolve,reject)=>{
+        fs.writeFile('./todos.json', JSON.stringify(todos), (err) => {
+          if (err) throw err;
+          console.log('File has been saved!');
+        });
+      resolve(true);
+    })
+  }
+  app.get('/todos',(req,res)=>{
+    readAndStoreFile().then(()=>{
+      res.status(200).json(todos);
+    })
+  });
+  
+  const getTodo=(id)=>{
+    let todo={}
+    const result=todos.map((item)=>{
+      if(item.id === id){
+        todo= { ...item }
+      }
+    })
+    if(todo.id){
+      return todo;
+    }else{
+      return false;
+    }
+  }
+
+  const editTodo=(id,todo)=>{
+    return new Promise((resolve,reject)=>{
+      let result = false;
+      todos.forEach((item, index) => {
+        if (item.id === id) {
+          // Update properties of the matching item
+          todos[index].title = todo.title;
+          todos[index].completed = todo.completed;
+          todos[index].description = todo.description;
+  
+          // Set result to true to indicate successful update
+          result = true;
+          writeAndStoreFile().then(()=>{
+            resolve(result)
+          })
+        }
+      });
+    })
+  }
+
+  const addTodo=(todo)=>{
+    return new Promise((resolve,reject)=>{
+      todos.push(todo);
+      writeAndStoreFile().then(()=>{
+        resolve(true)      
+      })
+    })
+  }
+  const deleteTodo=(id)=>{
+    return new Promise((resolve,reject)=>{
+      let itemFound=false;
+      todos=todos.filter((item)=>{
+        console.log(item)
+        if(item.id === id){
+          itemFound=true;
+        }
+        return item.id != id
+      })
+      writeAndStoreFile().then(()=>{
+        resolve(itemFound)
+      })
+    })
+    
+  }
+  app.get('/todos/:id',(req,res)=>{
+    const id=req.params.id;
+    const todo=getTodo(id);
+    if(todo){
+      res.status(200).json(todo);
+    }else{
+      res.status(404).send();
+    }
+  });
+
+  app.post('/todos',(req,res)=>{
+    const id=uuidv4();
+    const {title,completed,description}=req.body;
+    const todo={
+      id,
+      title,
+      completed,
+      description
+    }
+    addTodo(todo).then((result)=>{
+      if(result){
+        res.status(201).json(todo);
+      }else{
+        res.status(500).send('Server error')
+      }
+    })
+
+  })
+
+  app.delete('/todos/:id',(req,res)=>{
+    const id=req.params.id;
+    console.log("ID IS: ",id)
+    const deleted=deleteTodo(id);
+    if(deleted){
+      res.status(200).send('OK');
+    }else{
+      res.status(404).send('Not Found');
+    }
+  })
+
+  app.put('/todos/:id',(req,res)=>{
+    const id=req.params.id;
+    const {title,completed,description}=req.body;
+    const todo={
+      title,
+      completed,
+      description
+    }
+    editTodo(id,todo).then(()=>{
+      res.status(200).send('OK')
+    }).catch(()=>{
+      res.status(404).send('Not Found')
+    })
+  })
+
+  app.get('*',(req,res)=>{
+    res.status(404).send('Route not found');
+  })
+
+
+  app.listen(3000,()=>{
+    console.log('Listening on port: ',3000)
+  })
   
   module.exports = app;

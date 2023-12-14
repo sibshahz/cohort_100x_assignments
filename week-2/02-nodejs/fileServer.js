@@ -16,6 +16,68 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
+const bodyParser = require('body-parser');
+app.use(bodyParser.json());
+
+
+const folder=path.join(__dirname,'files');
+
+const readFiles=()=>{
+  return new Promise((resolve,reject)=>{
+    fs.readdir(folder, (err, files) => {
+      if (err) {
+        return 'Error reading directory:'+err;
+      }  
+      const filesArray=[]
+      files.forEach((file) => {
+        filesArray.push(file);
+      });
+      resolve(filesArray);
+    });
+  })
+}
+
+const readFileData=(fileName)=>{
+  return new Promise((resolve,reject)=>{
+    fs.readFile(path.join(folder,fileName),'utf-8', (err, data) => {
+      if (err) {
+        return 'Error reading file: '+err;
+      }
+      resolve(data);
+    });
+  })
+}
+app.get('/files',async (req,res)=>{
+  readFiles().then((data)=>{
+    res.send(JSON.stringify(data));
+  }).catch((error)=>{
+    res.send(JSON.stringify('Error reading files'))
+  })
+})
+
+app.get('/file/:filename',async (req,res)=>{
+  const fileName=req.params.filename;
+  readFiles().then((data)=>{
+    if(data.includes(fileName)){
+      readFileData(fileName).then((data)=>{
+        res.send(JSON.stringify(data));
+      }).catch(error => {
+        res.send(`Error reading file: ${error}`)
+      })
+    }else{
+      res.status(404).send("File not found")
+    }
+  }).catch((error)=>{
+    res.send('Error reading files')
+  })
+})
+
+app.get('*',(req,res)=>{
+  res.status(404).send('Route not found');
+})
+app.listen(3000,() => {
+  console.log("Listening on port 3000");
+})
 
 
 module.exports = app;
