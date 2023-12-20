@@ -16,12 +16,32 @@ setInterval(() => {
     numberOfRequestsForUser = {};
 }, 1000)
 
+function setLimiter(req, res, next) {
+  const userId = req.headers['user-id'];
+  
+  numberOfRequestsForUser[userId] = (numberOfRequestsForUser[userId] || 0) + 1;
+
+  if (numberOfRequestsForUser[userId] >= 5) {
+    res.status(404).json("You are not allowed");
+    return;
+  }
+  next();
+}
+
+app.use(setLimiter)
 app.get('/user', function(req, res) {
   res.status(200).json({ name: 'john' });
+});
+app.get('/rate', function(req, res) {
+  res.status(200).json(numberOfRequestsForUser);
 });
 
 app.post('/user', function(req, res) {
   res.status(200).json({ msg: 'created dummy user' });
 });
 
+
+app.listen(3000,()=>{
+  console.log("Server running on port: ",3000);
+})
 module.exports = app;
