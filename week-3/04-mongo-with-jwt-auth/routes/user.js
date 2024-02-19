@@ -1,10 +1,24 @@
 const { Router } = require("express");
 const router = Router();
 const userMiddleware = require("../middleware/user");
+const {User} = require("../db/index.js");
 
 // User Routes
-router.post('/signup', (req, res) => {
-    // Implement user signup logic
+router.post('/signup', async (req, res) => {
+    try {
+        // Implement user signup logic with proper error handling
+        const newUser = await User.create({
+            username: req.body.username,
+            password: req.body.password
+        });
+
+        res.json({
+            message: 'User created successfully.',
+            user: newUser
+        });
+    } catch (error) {
+        res.status(500).json({ error: `Internal Server Error ${error.message}` });
+    }
 });
 
 router.post('/signin', (req, res) => {
