@@ -13,10 +13,10 @@ const prisma = new PrismaClient();
  * }
  */
 export async function createUser(username: string, password: string, name: string) {
-    const res=await prisma.user.create({
-      data:{username,password,name}
-    })
-    return res;
+  const res=await prisma.user.create({
+    data:{username,password,name}
+  })
+  return res;
 }
 
 /*
